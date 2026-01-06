@@ -5,10 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Novo Processo</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; }
-        input, select, textarea { width: 100%; padding: 10px; margin: 5px 0; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background-color: #28a745; color: white; border: none; cursor: pointer; font-size: 16px; }
-        .back-link { display: block; margin-bottom: 20px; color: #666; text-decoration: none; }
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background-color: #f8f9fa; }
+        h2 { color: #333; text-align: center; }
+        
+        label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.9em; color: #555; }
+        input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        
+        button { width: 100%; padding: 15px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px; font-weight: bold; }
+        button:hover { background-color: #218838; }
+        
+        .back-link { display: block; margin-bottom: 20px; color: #007bff; text-decoration: none; font-weight: bold; }
+        .row { display: flex; gap: 10px; } /* Para colocar campos lado a lado */
+        .col { flex: 1; }
     </style>
 </head>
 <body>
@@ -16,45 +24,115 @@
     <a href="index.html" class="back-link">⬅ Voltar ao Menu</a>
     <h2>Cadastrar Novo Processo</h2>
     
-    <input type="text" id="nome" placeholder="Nome do Cliente">
-    <input type="text" id="proposta" placeholder="Número da Proposta">
-    
-    <input type="tel" id="telefone" placeholder="Telefone / Contato">
-    <select id="status">
-        <option value="Em Andamento">Em Andamento</option>
-        <option value="Aprovado">Aprovado</option>
+    <label>Data do Processo</label>
+    <input type="date" id="dataProcesso">
+
+    <label>Nome do Cliente</label>
+    <input type="text" id="nome" placeholder="Ex: João da Silva">
+
+    <div class="row">
+        <div class="col">
+            <label>Número da Proposta</label>
+            <input type="text" id="proposta" placeholder="Ex: 123456">
+        </div>
+        <div class="col">
+            <label>Corretor</label>
+            <input type="text" id="corretor" placeholder="Nome do Corretor">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <label>Valor do Contrato (R$)</label>
+            <input type="number" id="valor" step="0.01" placeholder="0,00">
+        </div>
+        <div class="col">
+            <label>Qtd. Vidas</label>
+            <input type="number" id="vidas" placeholder="1">
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col">
+            <label>Modalidade</label>
+            <select id="modalidade">
+                <option value="">Selecione...</option>
+                <option value="PF">Pessoa Física (PF)</option>
+                <option value="PJ">Pessoa Jurídica (PJ)</option>
+                <option value="Adesão">Adesão</option>
+            </select>
+        </div>
+        <div class="col">
+            <label>Operadora</label>
+            <select id="operadora">
+                <option value="">Selecione...</option>
+                <option value="Amil">Amil</option>
+                <option value="Unimed">Unimed</option>
+                <option value="Bradesco">Bradesco</option>
+                <option value="SulAmérica">SulAmérica</option>
+                <option value="Outros">Outros</option>
+            </select>
+        </div>
+    </div>
+
+    <label>Plano Contratado</label>
+    <input type="text" id="plano" placeholder="Ex: Nacional Flex...">
+
+    <label>Status Atual</label>
+    <select id="status" style="background-color: #e8f0fe;">
+        <option value="Análise">Em Análise</option>
         <option value="Pendente">Pendente</option>
+        <option value="Implantado">Implantado (Vendido)</option>
+        <option value="Cancelado">Cancelado</option>
     </select>
     
-    <button id="btnSalvar">Salvar</button>
+    <button id="btnSalvar">Salvar Processo</button>
 
     <script type="module">
-        import { db } from './config.js'; // Puxa a configuração
+        import { db } from './config.js';
         import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         document.getElementById("btnSalvar").addEventListener("click", async () => {
-            // PEGA OS VALORES DOS CAMPOS
+            // 1. CAPTURAR VALORES
             const nome = document.getElementById("nome").value;
             const proposta = document.getElementById("proposta").value;
-            const telefone = document.getElementById("telefone").value;
+            const dataProcesso = document.getElementById("dataProcesso").value;
+            const corretor = document.getElementById("corretor").value;
+            const valor = document.getElementById("valor").value;
+            const vidas = document.getElementById("vidas").value;
+            const modalidade = document.getElementById("modalidade").value;
+            const operadora = document.getElementById("operadora").value;
+            const plano = document.getElementById("plano").value;
             const status = document.getElementById("status").value;
 
-            if(nome === "") { alert("O nome é obrigatório!"); return; }
+            // Validação simples
+            if(nome === "" || proposta === "") { 
+                alert("Preencha pelo menos Nome e Proposta!"); 
+                return; 
+            }
 
             try {
-                // SALVA NO BANCO (Adicione os novos campos aqui também)
+                // 2. SALVAR NO FIREBASE
                 await addDoc(collection(db, "processos"), {
                     nome: nome,
                     proposta: proposta,
-                    telefone: telefone, // Novo campo
-                    status: status,     // Novo campo
-                    data: new Date()
+                    dataProcesso: dataProcesso,
+                    corretor: corretor,
+                    valor: valor,
+                    vidas: vidas,
+                    modalidade: modalidade,
+                    operadora: operadora,
+                    plano: plano,
+                    status: status,
+                    criadoEm: new Date() // Data e hora exata do sistema para ordenação
                 });
-                alert("Salvo com sucesso!");
-                window.location.href = "lista.html"; // Vai para a lista após salvar
+                
+                alert("Processo salvo com sucesso!");
+                window.location.href = "lista.html"; 
+
             } catch (e) {
                 console.error(e);
-                alert("Erro ao salvar");
+                alert("Erro ao salvar: " + e.message);
             }
         });
     </script>
