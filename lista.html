@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Meus Processos</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; }
+        .card { background: #eee; padding: 15px; margin-bottom: 10px; border-radius: 5px; border-left: 5px solid #007bff; }
+        .actions { margin-top: 10px; }
+        button { margin-right: 5px; padding: 5px 10px; cursor: pointer; }
+        .btn-del { background: #dc3545; color: white; border: none; }
+        .btn-edit { background: #ffc107; border: none; }
+        .back-link { display: block; margin-bottom: 20px; color: #666; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <a href="index.html" class="back-link">⬅ Voltar ao Menu</a>
+    <a href="cadastro.html" style="float:right; text-decoration:none; background:#28a745; color:white; padding:5px 10px; border-radius:4px;">+ Novo</a>
+    <h2>Lista de Processos</h2>
+
+    <div id="lista">Carregando...</div>
+
+    <script type="module">
+        import { db } from './config.js';
+        import { collection, onSnapshot, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const listaDiv = document.getElementById("lista");
+
+        onSnapshot(collection(db, "processos"), (snapshot) => {
+            listaDiv.innerHTML = "";
+            snapshot.forEach((item) => {
+                const dados = item.data();
+                const id = item.id;
+
+                // AQUI VOCÊ MONTA COMO O PROCESSO APARECE NA TELA
+                // Adicione os novos campos (telefone, status) aqui embaixo para aparecerem
+                const itemDiv = document.createElement("div");
+                itemDiv.className = "card";
+                itemDiv.innerHTML = `
+                    <h3>${dados.nome}</h3>
+                    <p><strong>Proposta:</strong> ${dados.proposta}</p>
+                    <p><strong>Telefone:</strong> ${dados.telefone || '---'}</p>
+                    <p><strong>Status:</strong> ${dados.status || '---'}</p>
+                    
+                    <div class="actions">
+                        <button class="btn-edit" onclick="editar('${id}', '${dados.nome}', '${dados.status}')">Editar</button>
+                        <button class="btn-del" onclick="deletar('${id}')">Excluir</button>
+                    </div>
+                `;
+                listaDiv.appendChild(itemDiv);
+            });
+        });
+
+        // Funções globais para os botões funcionarem
+        window.deletar = async (id) => {
+            if(confirm("Confirmar exclusão?")) {
+                await deleteDoc(doc(db, "processos", id));
+            }
+        };
+
+        // Edição simples (via Prompt)
+        window.editar = async (id, nomeAtual, statusAtual) => {
+            // Para editar tudo, o ideal seria levar para outra página, 
+            // mas para simplificar vamos editar o Status aqui
+            const novoStatus = prompt("Atualizar Status (Ex: Aprovado, Cancelado):", statusAtual);
+            
+            if (novoStatus) {
+                await updateDoc(doc(db, "processos", id), {
+                    status: novoStatus
+                });
+            }
+        }
+    </script>
+</body>
+</html>
