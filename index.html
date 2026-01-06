@@ -3,130 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciador de Processos</title>
+    <title>Menu Principal</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background-color: #f4f4f4; }
-        .container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        h2 { color: #333; }
-        input, button { padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }
-        button { background-color: #28a745; color: white; border: none; cursor: pointer; }
-        button:hover { background-color: #218838; }
-        .delete-btn { background-color: #dc3545; width: auto; margin-left: 10px; }
-        .edit-btn { background-color: #007bff; width: auto; margin-left: 10px; }
-        ul { list-style-type: none; padding: 0; }
-        li { background: #eee; margin: 10px 0; padding: 10px; display: flex; justify-content: space-between; align-items: center; border-radius: 4px; }
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center; background-color: #f4f4f4; }
+        .menu-box { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        h1 { color: #333; }
+        .btn { display: block; width: 100%; padding: 15px; margin: 10px 0; text-decoration: none; color: white; border-radius: 5px; font-size: 18px; }
+        .btn-cadastro { background-color: #28a745; }
+        .btn-lista { background-color: #007bff; }
+        .btn:hover { opacity: 0.9; }
     </style>
 </head>
 <body>
-
-<div class="container">
-    <h2>Novo Processo</h2>
-    <input type="text" id="nomeCliente" placeholder="Nome do Cliente">
-    <input type="text" id="numProposta" placeholder="Número da Proposta">
-    <button id="btnSalvar">Salvar Processo</button>
-
-    <hr>
-
-    <h2>Lista de Processos</h2>
-    <ul id="listaProcessos">
-        <li>Carregando...</li>
-    </ul>
-</div>
-
-<script type="module">
-    // Importa as ferramentas do Firebase (não mexa nos links)
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-    // --- ÁREA DE CONFIGURAÇÃO (SUBSITITUA ABAIXO) ---
-    // Copie do Firebase apenas o trecho que começa com "const firebaseConfig" até o fechamento "};"
-    
-    const firebaseConfig = {
-      apiKey: "AIzaSyAFirIsgcYtcGUTZ-GPfo1F3P_cqOC2VsE",
-      authDomain: "gerenciadortrabalho-ec7e8.firebaseapp.com",
-      projectId: "gerenciadortrabalho-ec7e8",
-      storageBucket: "gerenciadortrabalho-ec7e8.firebasestorage.app",
-      messagingSenderId: "87436928988",
-       appId: "1:87436928988:web:77635c9787c2d9532c9119",
-      measurementId: "G-96HSJCTCBE"
-    };
-
-    // --- FIM DA ÁREA DE CONFIGURAÇÃO ---
-
-    // Inicializa o banco
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    // 1. Função para SALVAR (Create)
-    async function salvarProcesso() {
-        const nome = document.getElementById("nomeCliente").value;
-        const proposta = document.getElementById("numProposta").value;
-
-        if (nome === "" || proposta === "") {
-            alert("Preencha todos os campos!");
-            return;
-        }
-
-        try {
-            await addDoc(collection(db, "processos"), {
-                nome: nome,
-                proposta: proposta,
-                data: new Date()
-            });
-            // Limpa os campos
-            document.getElementById("nomeCliente").value = "";
-            document.getElementById("numProposta").value = "";
-            alert("Salvo com sucesso!");
-        } catch (e) {
-            console.error("Erro ao salvar: ", e);
-            alert("Erro ao salvar. Veja o console (F12).");
-        }
-    }
-
-    // 2. Função para LER em tempo real (Read)
-    const lista = document.getElementById("listaProcessos");
-    
-    // O onSnapshot fica "ouvindo" o banco. Se mudar lá, muda aqui na hora.
-    onSnapshot(collection(db, "processos"), (snapshot) => {
-        lista.innerHTML = ""; // Limpa a lista para não duplicar
-        
-        snapshot.forEach((item) => {
-            const dados = item.data();
-            const id = item.id;
-
-            const li = document.createElement("li");
-            li.innerHTML = `
-                <span><strong>${dados.proposta}</strong> - ${dados.nome}</span>
-                <div>
-                    <button class="edit-btn" onclick="editar('${id}', '${dados.nome}')">Editar</button>
-                    <button class="delete-btn" onclick="deletar('${id}')">X</button>
-                </div>
-            `;
-            lista.appendChild(li);
-        });
-    });
-
-    // 3. Função para DELETAR
-    window.deletar = async function(id) {
-        if(confirm("Tem certeza que quer apagar?")) {
-            await deleteDoc(doc(db, "processos", id));
-        }
-    }
-
-    // 4. Função para EDITAR (Update)
-    window.editar = async function(id, nomeAtual) {
-        const novoNome = prompt("Novo nome do cliente:", nomeAtual);
-        if (novoNome && novoNome !== nomeAtual) {
-            await updateDoc(doc(db, "processos", id), {
-                nome: novoNome
-            });
-        }
-    }
-
-    // Ativa o botão de salvar
-    document.getElementById("btnSalvar").addEventListener("click", salvarProcesso);
-
-</script>
-
+    <div class="menu-box">
+        <h1>Gerenciador de Processos</h1>
+        <p>O que você deseja fazer?</p>
+        <a href="cadastro.html" class="btn btn-cadastro">➕ Novo Processo</a>
+        <a href="lista.html" class="btn btn-lista">📋 Ver/Editar Processos</a>
+    </div>
 </body>
 </html>
