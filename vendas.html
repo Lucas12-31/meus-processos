@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Vendas</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #f4f4f4; }
+        
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .back-link { color: #555; text-decoration: none; font-weight: bold; font-size: 1.1em; }
+        h2 { color: #333; margin: 0; }
+
+        /* Estilo dos Cards de Resumo Mensal */
+        .month-card { 
+            background: white; 
+            padding: 25px; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05); 
+            margin-bottom: 20px; 
+            border-left: 8px solid #6f42c1; /* Roxo para combinar */
+        }
+
+        .month-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-bottom: 1px solid #eee; 
+            padding-bottom: 15px; 
+            margin-bottom: 15px; 
+        }
+        
+        .month-title { font-size: 1.4em; font-weight: bold; color: #6f42c1; text-transform: capitalize; }
+        .month-count { background: #eee; padding: 5px 10px; border-radius: 15px; font-size: 0.8em; font-weight: bold; color: #555; }
+
+        .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        
+        .stat-box { text-align: center; padding: 15px; background-color: #f8f9fa; border-radius: 8px; }
+        .stat-label { display: block; font-size: 0.9em; color: #666; margin-bottom: 5px; }
+        .stat-value { display: block; font-size: 1.4em; font-weight: bold; color: #333; }
+        
+        .val-money { color: #28a745; } /* Verde para dinheiro */
+        .val-lives { color: #007bff; } /* Azul para vidas */
+
+        .total-geral { text-align: center; margin-bottom: 30px; padding: 20px; background: #6f42c1; color: white; border-radius: 10px; }
+    </style>
+</head>
+<body>
+
+    <div class="header-area">
+        <a href="index.html" class="back-link">⬅ Voltar ao Menu</a>
+        <h2>📊 Desempenho de Vendas</h2>
+    </div>
+
+    <div id="totalGeral" class="total-geral">Carregando dados...</div>
+
+    <div id="listaRelatorios"></div>
+
+    <script type="module">
+        import { db } from './config.js';
+        import { collection, onSnapshot, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const divLista = document.getElementById("listaRelatorios");
+        const divTotal = document.getElementById("totalGeral");
+
+        // Busca apenas processos IMPLANTADOS (Vendas reais)
+        // Dica: Se der erro de índice no console, usamos a ordenação via JS para simplificar
+        const q = query(collection(db, "processos")); 
+
+        onSnapshot(q, (snapshot) => {
+            let dadosPorMes = {};
+            let totalzaoValor = 0;
+            let totalzaoVidas = 0;
+
+            snapshot.forEach((doc) => {
+                const item = doc.data();
+
+                // FILTRO DE SEGURANÇA: Só conta se for Implantado
+                if (item.status !== "Implantado") return;
+
+                // Pega a data (YYYY-MM-DD) e extrai o Mês/Ano
+                if (!item.dataProcesso) return; // Pula se não tiver data
+                
+                const dataObj = new Date(item.dataProcesso + "T12:00:00"); // Gambiarra de fuso horário pra garantir o dia certo
+                const mesAnoKey = item.dataProcesso.substring(0, 7); // "2025-11" (usado para ordenar)
+                const mesNome = dataObj.toLocaleString('pt-BR', { month: 'long', year: 'numeric' }); // "novembro de 2025"
+
+                // Inicializa o objeto do mês se não existir
+                if (!dadosPorMes[mesAnoKey]) {
+                    dadosPorMes[mesAnoKey] = {
+                        nome: mesNome,
+                        valor: 0,
+                        vidas: 0,
+                        qtdProcessos: 0
+                    };
+                }
+
+                // Soma os valores
+                const valorLimpo = parseFloat(item.valor) || 0;
+                const vidasLimpo = parseFloat(item.vidas) || 0;
+
+                dadosPorMes[mesAnoKey].valor += valorLimpo;
+                dadosPorMes[mesAnoKey].vidas += vidasLimpo;
+                dadosPorMes[mesAnoKey].qtdProcessos += 1;
+
+                // Soma no Total Geral
+                totalzaoValor += valorLimpo;
+                totalzaoVidas += vidasLimpo;
+            });
+
+            // --- RENDERIZAR NA TELA ---
+
+            // 1. Mostrar o Totalzão do topo
+            divTotal.innerHTML = `
+                <h3 style="margin:0 0 10px 0;">Total Geral Acumulado</h3>
+                <span style="font-size:1.8em; font-weight:bold;">${formatarMoeda(totalzaoValor)}</span>
+                <div style="margin-top:5px;">Total de Vidas: <strong>${totalzaoVidas}</strong></div>
+            `;
+
+            divLista.innerHTML = "";
+
+            // 2. Ordenar os meses (do mais recente para o mais antigo)
+            const mesesOrdenados = Object.keys(dadosPorMes).sort().reverse();
+
+            if (mesesOrdenados.length === 0) {
+                divLista.innerHTML = "<p style='text-align:center'>Nenhuma venda (Implantada) encontrada.</p>";
+                return;
+            }
+
+            // 3. Criar os cards de cada mês
+            mesesOrdenados.forEach(key => {
+                const dados = dadosPorMes[key];
+
+                const cardHTML = `
+                    <div class="month-card">
+                        <div class="month-header">
+                            <span class="month-title">${dados.nome}</span>
+                            <span class="month-count">${dados.qtdProcessos} vendas</span>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-box">
+                                <span class="stat-label">Faturamento</span>
+                                <span class="stat-value val-money">${formatarMoeda(dados.valor)}</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-label">Total de Vidas</span>
+                                <span class="stat-value val-lives">${dados.vidas}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                divLista.innerHTML += cardHTML;
+            });
+        });
+
+        function formatarMoeda(valor) {
+            return valor.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+        }
+
+    </script>
+</body>
+</html>
