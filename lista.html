@@ -11,6 +11,22 @@
         .btn-novo { background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; }
         .back-link { color: #555; text-decoration: none; font-weight: bold; }
 
+        /* --- ESTILO DOS FILTROS --- */
+        .filter-bar { 
+            background: white; 
+            padding: 15px; 
+            border-radius: 8px; 
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            margin-bottom: 20px; 
+            display: flex; 
+            gap: 10px; 
+            flex-wrap: wrap;
+        }
+        .filter-group { flex: 1; min-width: 200px; }
+        .filter-group label { display: block; font-size: 0.8em; font-weight: bold; color: #555; margin-bottom: 5px; }
+        .filter-bar select, .filter-bar input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+
+        /* Estilo do Cartão */
         .card { background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 6px solid #007bff; }
         
         .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
@@ -27,6 +43,9 @@
         button, .btn-link { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; font-size: 14px; text-decoration: none; }
         .btn-del { background: #dc3545; }
         .btn-edit { background: #ffc107; color: #333; }
+        
+        /* Contador de resultados */
+        .results-count { font-size: 0.9em; color: #666; margin-bottom: 10px; text-align: right; }
     </style>
 </head>
 <body>
@@ -37,27 +56,121 @@
         <a href="cadastro.html" class="btn-novo">+ Novo Processo</a>
     </div>
 
-    <div id="lista">Carregando processos...</div>
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label>🔎 Buscar por Nome ou Proposta</label>
+            <input type="text" id="filtroBusca" placeholder="Digite para buscar...">
+        </div>
+        
+        <div class="filter-group">
+            <label>🏢 Filtrar por Operadora</label>
+            <select id="filtroOperadora">
+                <option value="">Todas as Operadoras</option>
+                <option value="Amil">Amil</option>
+                <option value="Assim Saúde">Assim Saúde</option>
+                <option value="Bradesco">Bradesco</option>
+                <option value="Hapvida">Hapvida</option>
+                <option value="Klini PME">Klini Saúde</option>
+                <option value="Leve Saúde">Leve Saúde</option>
+                <option value="MedSênior">MedSênior</option>
+                <option value="Porto Seguro">Porto Seguro</option>
+                <option value="Prevent Sênior">Prevent Sênior</option>
+                <option value="QualiCorp">QualiCorp</option>
+                <option value="Solutions">Solutions</option>
+                <option value="SulAmérica">SulAmérica</option>
+                <option value="Supermed">Supermed</option>
+                <option value="Unimed">Unimed</option>
+                <option value="Outros">Outros</option>
+            </select>
+        </div>
+
+        <div class="filter-group">
+            <label>📌 Filtrar por Status</label>
+            <select id="filtroStatus">
+                <option value="">Todos os Status</option>
+                <option value="Enviado para aceite/DS">Enviado para aceite/DS</option>
+                <option value="Análise">Em Análise</option>
+                <option value="Pendente">Pendente</option>
+                <option value="Pendência Resolvida">Pendência Resolvida</option>
+                <option value="Proposta Liberada">Proposta Liberada</option>
+                <option value="Boleto Liberado">Boleto Liberado</option>
+                <option value="Implantado">Implantado (Vendido)</option>
+                <option value="Cancelado">Cancelado</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="results-count" id="contador">Carregando...</div>
+    <div id="lista"></div>
 
     <script type="module">
         import { db } from './config.js';
         import { collection, onSnapshot, doc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const listaDiv = document.getElementById("lista");
+        const contadorDiv = document.getElementById("contador");
+        
+        // Elementos dos filtros
+        const inputBusca = document.getElementById("filtroBusca");
+        const selectOperadora = document.getElementById("filtroOperadora");
+        const selectStatus = document.getElementById("filtroStatus");
+
+        // Variável global para guardar TODOS os dados originais
+        let todosProcessos = [];
+
+        // 1. BAIXAR DADOS DO FIREBASE
         const q = query(collection(db, "processos"), orderBy("criadoEm", "desc"));
 
         onSnapshot(q, (snapshot) => {
-            listaDiv.innerHTML = "";
+            todosProcessos = []; // Limpa a memória
             
-            if (snapshot.empty) {
-                listaDiv.innerHTML = "<p style='text-align:center'>Nenhum processo encontrado.</p>";
+            snapshot.forEach((doc) => {
+                todosProcessos.push({
+                    id: doc.id,
+                    ...doc.data() // Pega todos os dados (nome, operadora, etc)
+                });
+            });
+
+            aplicarFiltros(); // Chama a função de desenhar na tela
+        });
+
+        // 2. FUNÇÃO QUE FILTRA E DESENHA NA TELA
+        function aplicarFiltros() {
+            const termo = inputBusca.value.toLowerCase();
+            const operadoraSelecionada = selectOperadora.value;
+            const statusSelecionado = selectStatus.value;
+
+            // Filtra o array global
+            const filtrados = todosProcessos.filter(item => {
+                // Filtro de Texto (Nome ou Proposta)
+                const nomeMatch = item.nome && item.nome.toLowerCase().includes(termo);
+                const propMatch = item.proposta && item.proposta.toLowerCase().includes(termo);
+                const matchTexto = termo === "" || nomeMatch || propMatch;
+
+                // Filtro de Operadora
+                const matchOperadora = operadoraSelecionada === "" || item.operadora === operadoraSelecionada;
+
+                // Filtro de Status
+                const matchStatus = statusSelecionado === "" || item.status === statusSelecionado;
+
+                return matchTexto && matchOperadora && matchStatus;
+            });
+
+            renderizarLista(filtrados);
+        }
+
+        // 3. FUNÇÃO QUE CRIA O HTML (MOSTRA OS CARDS)
+        function renderizarLista(listaDeDados) {
+            listaDiv.innerHTML = "";
+            contadorDiv.innerText = `${listaDeDados.length} processos encontrados`;
+
+            if (listaDeDados.length === 0) {
+                listaDiv.innerHTML = "<p style='text-align:center; color:#888;'>Nenhum processo encontrado com esses filtros.</p>";
                 return;
             }
 
-            snapshot.forEach((item) => {
-                const dados = item.data();
-                const id = item.id;
-
+            listaDeDados.forEach((dados) => {
+                // Formatações
                 let dataFormatada = "---";
                 if(dados.dataProcesso) {
                     const partes = dados.dataProcesso.split('-'); 
@@ -69,12 +182,15 @@
                     valorFormatado = parseFloat(dados.valor).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
                 }
 
+                // Cores do Status
+                let borderCor = "#007bff"; // Azul padrão
+                if(dados.status && dados.status.includes("Implantado")) borderCor = "#28a745"; // Verde
+                if(dados.status && dados.status.includes("Cancelado")) borderCor = "#dc3545"; // Vermelho
+                if(dados.status && dados.status.includes("Pendente")) borderCor = "#ffc107"; // Amarelo
+                if(dados.status && dados.status.includes("Liberado")) borderCor = "#17a2b8"; // Ciano
+
                 const itemDiv = document.createElement("div");
                 itemDiv.className = "card";
-                
-                let borderCor = "#007bff";
-                if(dados.status === "Implantado") borderCor = "#28a745";
-                if(dados.status === "Cancelado") borderCor = "#dc3545";
                 itemDiv.style.borderLeftColor = borderCor;
 
                 itemDiv.innerHTML = `
@@ -99,14 +215,20 @@
                     </div>
                     
                     <div class="actions">
-                        <a href="editar.html?id=${id}" class="btn-link btn-edit">✏️ Editar</a>
-                        <button class="btn-del" onclick="deletar('${id}')">Excluir</button>
+                        <a href="editar.html?id=${dados.id}" class="btn-link btn-edit">✏️ Editar</a>
+                        <button class="btn-del" onclick="deletar('${dados.id}')">Excluir</button>
                     </div>
                 `;
                 listaDiv.appendChild(itemDiv);
             });
-        });
+        }
 
+        // EVENTOS: Sempre que mexer no filtro, roda a função
+        inputBusca.addEventListener("keyup", aplicarFiltros);
+        selectOperadora.addEventListener("change", aplicarFiltros);
+        selectStatus.addEventListener("change", aplicarFiltros);
+
+        // FUNÇÃO DELETAR (Mantida igual)
         window.deletar = async (id) => {
             if(confirm("Tem certeza que deseja EXCLUIR este processo?")) {
                 await deleteDoc(doc(db, "processos", id));
