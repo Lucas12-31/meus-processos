@@ -11,7 +11,6 @@
         .btn-novo { background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; }
         .back-link { color: #555; text-decoration: none; font-weight: bold; }
 
-        /* Estilo do Cartão */
         .card { background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 6px solid #007bff; }
         
         .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
@@ -25,10 +24,9 @@
         .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; background: #e2e3e5; color: #383d41; }
         
         .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
-        button { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; font-size: 14px; }
+        button, .btn-link { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; font-size: 14px; text-decoration: none; }
         .btn-del { background: #dc3545; }
         .btn-edit { background: #ffc107; color: #333; }
-
     </style>
 </head>
 <body>
@@ -43,11 +41,9 @@
 
     <script type="module">
         import { db } from './config.js';
-        import { collection, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { collection, onSnapshot, doc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const listaDiv = document.getElementById("lista");
-
-        // Query para ordenar por data de criação (mais novos primeiro)
         const q = query(collection(db, "processos"), orderBy("criadoEm", "desc"));
 
         onSnapshot(q, (snapshot) => {
@@ -62,27 +58,23 @@
                 const dados = item.data();
                 const id = item.id;
 
-                // Formatar Data (Se existir)
                 let dataFormatada = "---";
                 if(dados.dataProcesso) {
-                    const partes = dados.dataProcesso.split('-'); // Quebra 2024-01-01
-                    dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`; // Vira 01/01/2024
+                    const partes = dados.dataProcesso.split('-'); 
+                    dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
                 }
 
-                // Formatar Valor (Se existir)
                 let valorFormatado = "R$ 0,00";
                 if(dados.valor) {
                     valorFormatado = parseFloat(dados.valor).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
                 }
 
-                // Criar o HTML do cartão
                 const itemDiv = document.createElement("div");
                 itemDiv.className = "card";
                 
-                // Muda a cor da borda esquerda baseada no status
-                let borderCor = "#007bff"; // Azul padrão
-                if(dados.status === "Implantado") borderCor = "#28a745"; // Verde
-                if(dados.status === "Cancelado") borderCor = "#dc3545"; // Vermelho
+                let borderCor = "#007bff";
+                if(dados.status === "Implantado") borderCor = "#28a745";
+                if(dados.status === "Cancelado") borderCor = "#dc3545";
                 itemDiv.style.borderLeftColor = borderCor;
 
                 itemDiv.innerHTML = `
@@ -107,7 +99,7 @@
                     </div>
                     
                     <div class="actions">
-                        <a href="editar.html?id=${id}" class="btn-edit" style="text-decoration:none; display:inline-block;">✏️ Editar</a>
+                        <a href="editar.html?id=${id}" class="btn-link btn-edit">✏️ Editar</a>
                         <button class="btn-del" onclick="deletar('${id}')">Excluir</button>
                     </div>
                 `;
@@ -115,7 +107,6 @@
             });
         });
 
-        // DELETAR
         window.deletar = async (id) => {
             if(confirm("Tem certeza que deseja EXCLUIR este processo?")) {
                 await deleteDoc(doc(db, "processos", id));
