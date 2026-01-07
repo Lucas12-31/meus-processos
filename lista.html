@@ -11,7 +11,6 @@
         .btn-novo { background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; }
         .back-link { color: #555; text-decoration: none; font-weight: bold; }
 
-        /* --- ESTILO DOS FILTROS --- */
         .filter-bar { 
             background: white; 
             padding: 15px; 
@@ -26,9 +25,7 @@
         .filter-group label { display: block; font-size: 0.8em; font-weight: bold; color: #555; margin-bottom: 5px; }
         .filter-bar select, .filter-bar input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
 
-        /* Estilo do Cartão */
         .card { background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 6px solid #007bff; }
-        
         .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         .card-title { font-size: 1.2em; font-weight: bold; color: #333; }
         .card-proposta { color: #666; font-size: 0.9em; }
@@ -36,15 +33,12 @@
         .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
         .info-item { font-size: 0.9em; }
         .info-label { font-weight: bold; color: #555; display: block; }
-
         .status-badge { padding: 4px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold; background: #e2e3e5; color: #383d41; }
         
         .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 10px; }
         button, .btn-link { padding: 8px 15px; cursor: pointer; border: none; border-radius: 4px; color: white; font-size: 14px; text-decoration: none; }
         .btn-del { background: #dc3545; }
         .btn-edit { background: #ffc107; color: #333; }
-        
-        /* Contador de resultados */
         .results-count { font-size: 0.9em; color: #666; margin-bottom: 10px; text-align: right; }
     </style>
 </head>
@@ -61,7 +55,6 @@
             <label>🔎 Buscar por Nome ou Proposta</label>
             <input type="text" id="filtroBusca" placeholder="Digite para buscar...">
         </div>
-        
         <div class="filter-group">
             <label>🏢 Filtrar por Operadora</label>
             <select id="filtroOperadora">
@@ -83,7 +76,6 @@
                 <option value="Outros">Outros</option>
             </select>
         </div>
-
         <div class="filter-group">
             <label>📌 Filtrar por Status</label>
             <select id="filtroStatus">
@@ -109,71 +101,55 @@
 
         const listaDiv = document.getElementById("lista");
         const contadorDiv = document.getElementById("contador");
-        
-        // Elementos dos filtros
         const inputBusca = document.getElementById("filtroBusca");
         const selectOperadora = document.getElementById("filtroOperadora");
         const selectStatus = document.getElementById("filtroStatus");
 
-        // Variável global para guardar TODOS os dados originais
         let todosProcessos = [];
 
-        // 1. BAIXAR DADOS DO FIREBASE
         const q = query(collection(db, "processos"), orderBy("criadoEm", "desc"));
 
         onSnapshot(q, (snapshot) => {
-            todosProcessos = []; // Limpa a memória
-            
+            todosProcessos = [];
             snapshot.forEach((doc) => {
-                todosProcessos.push({
-                    id: doc.id,
-                    ...doc.data() // Pega todos os dados (nome, operadora, etc)
-                });
+                todosProcessos.push({ id: doc.id, ...doc.data() });
             });
-
-            aplicarFiltros(); // Chama a função de desenhar na tela
+            aplicarFiltros();
         });
 
-        // 2. FUNÇÃO QUE FILTRA E DESENHA NA TELA
         function aplicarFiltros() {
             const termo = inputBusca.value.toLowerCase();
             const operadoraSelecionada = selectOperadora.value;
             const statusSelecionado = selectStatus.value;
 
-            // Filtra o array global
             const filtrados = todosProcessos.filter(item => {
-                // Filtro de Texto (Nome ou Proposta)
                 const nomeMatch = item.nome && item.nome.toLowerCase().includes(termo);
                 const propMatch = item.proposta && item.proposta.toLowerCase().includes(termo);
                 const matchTexto = termo === "" || nomeMatch || propMatch;
-
-                // Filtro de Operadora
                 const matchOperadora = operadoraSelecionada === "" || item.operadora === operadoraSelecionada;
-
-                // Filtro de Status
                 const matchStatus = statusSelecionado === "" || item.status === statusSelecionado;
-
                 return matchTexto && matchOperadora && matchStatus;
             });
 
             renderizarLista(filtrados);
         }
 
-        // 3. FUNÇÃO QUE CRIA O HTML (MOSTRA OS CARDS)
         function renderizarLista(listaDeDados) {
             listaDiv.innerHTML = "";
             contadorDiv.innerText = `${listaDeDados.length} processos encontrados`;
 
             if (listaDeDados.length === 0) {
-                listaDiv.innerHTML = "<p style='text-align:center; color:#888;'>Nenhum processo encontrado com esses filtros.</p>";
+                listaDiv.innerHTML = "<p style='text-align:center; color:#888;'>Nenhum processo encontrado.</p>";
                 return;
             }
 
             listaDeDados.forEach((dados) => {
-                // Formatações
+                // CORREÇÃO: Prioriza Data Venda. Se não tiver, usa Cadastro.
+                let dataParaMostrar = dados.dataVenda || dados.dataProcesso;
                 let dataFormatada = "---";
-                if(dados.dataProcesso) {
-                    const partes = dados.dataProcesso.split('-'); 
+                
+                if(dataParaMostrar) {
+                    const partes = dataParaMostrar.split('-'); 
                     dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
                 }
 
@@ -182,12 +158,11 @@
                     valorFormatado = parseFloat(dados.valor).toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
                 }
 
-                // Cores do Status
-                let borderCor = "#007bff"; // Azul padrão
-                if(dados.status && dados.status.includes("Implantado")) borderCor = "#28a745"; // Verde
-                if(dados.status && dados.status.includes("Cancelado")) borderCor = "#dc3545"; // Vermelho
-                if(dados.status && dados.status.includes("Pendente")) borderCor = "#ffc107"; // Amarelo
-                if(dados.status && dados.status.includes("Liberado")) borderCor = "#17a2b8"; // Ciano
+                let borderCor = "#007bff";
+                if(dados.status && dados.status.includes("Implantado")) borderCor = "#28a745";
+                if(dados.status && dados.status.includes("Cancelado")) borderCor = "#dc3545";
+                if(dados.status && dados.status.includes("Pendente")) borderCor = "#ffc107";
+                if(dados.status && dados.status.includes("Liberado")) borderCor = "#17a2b8";
 
                 const itemDiv = document.createElement("div");
                 itemDiv.className = "card";
@@ -205,7 +180,7 @@
                     </div>
 
                     <div class="info-grid">
-                        <div class="info-item"><span class="info-label">📅 Data:</span> ${dataFormatada}</div>
+                        <div class="info-item"><span class="info-label">📅 Venda:</span> ${dataFormatada}</div>
                         <div class="info-item"><span class="info-label">👤 Corretor:</span> ${dados.corretor || '--'}</div>
                         <div class="info-item"><span class="info-label">💰 Valor:</span> ${valorFormatado}</div>
                         <div class="info-item"><span class="info-label">👥 Vidas:</span> ${dados.vidas || '1'}</div>
@@ -223,17 +198,16 @@
             });
         }
 
-        // EVENTOS: Sempre que mexer no filtro, roda a função
-        inputBusca.addEventListener("keyup", aplicarFiltros);
-        selectOperadora.addEventListener("change", aplicarFiltros);
-        selectStatus.addEventListener("change", aplicarFiltros);
-
-        // FUNÇÃO DELETAR (Mantida igual)
         window.deletar = async (id) => {
             if(confirm("Tem certeza que deseja EXCLUIR este processo?")) {
                 await deleteDoc(doc(db, "processos", id));
             }
         };
+
+        // Event Listeners
+        inputBusca.addEventListener("keyup", aplicarFiltros);
+        selectOperadora.addEventListener("change", aplicarFiltros);
+        selectStatus.addEventListener("change", aplicarFiltros);
     </script>
 </body>
 </html>
