@@ -5,15 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Editar Processo</title>
     <style>
-        /* Mesmos estilos do cadastro para manter o padrão */
-        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background-color: #fff3cd; } /* Fundo amarelado para diferenciar */
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background-color: #fff3cd; } 
         h2 { color: #333; text-align: center; }
         label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.9em; color: #555; }
         input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
-        
         button { width: 100%; padding: 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px; font-weight: bold; }
-        button:hover { background-color: #0056b3; }
-        
         .back-link { display: block; margin-bottom: 20px; color: #007bff; text-decoration: none; font-weight: bold; }
         .row { display: flex; gap: 10px; }
         .col { flex: 1; }
@@ -21,11 +17,19 @@
 </head>
 <body>
 
-    <a href="lista.html" class="back-link">⬅ Cancelar e Voltar</a>
+    <a href="lista.html" class="back-link">⬅ Cancelar</a>
     <h2>✏️ Editar Processo</h2>
     
-    <label>Data do Processo</label>
-    <input type="date" id="dataProcesso">
+    <div class="row">
+        <div class="col">
+            <label>📅 Data Venda (Relatório)</label>
+            <input type="date" id="dataVenda">
+        </div>
+        <div class="col">
+            <label>📂 Data Cadastro</label>
+            <input type="date" id="dataProcesso">
+        </div>
+    </div>
 
     <label>Nome do Cliente</label>
     <input type="text" id="nome">
@@ -106,16 +110,11 @@
         import { db } from './config.js';
         import { doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // 1. PEGAR O ID DA URL (Ex: editar.html?id=123)
         const params = new URLSearchParams(window.location.search);
         const id = params.get('id');
 
-        if (!id) {
-            alert("Erro: Nenhum processo selecionado.");
-            window.location.href = "lista.html";
-        }
+        if (!id) { window.location.href = "lista.html"; }
 
-        // 2. BUSCAR DADOS NO BANCO E PREENCHER A TELA
         async function carregarDados() {
             const docRef = doc(db, "processos", id);
             const docSnap = await getDoc(docRef);
@@ -123,10 +122,13 @@
             if (docSnap.exists()) {
                 const dados = docSnap.data();
                 
-                // Preenche os campos com o que veio do banco
                 document.getElementById("nome").value = dados.nome || "";
                 document.getElementById("proposta").value = dados.proposta || "";
+                
+                // Preenche as datas
                 document.getElementById("dataProcesso").value = dados.dataProcesso || "";
+                document.getElementById("dataVenda").value = dados.dataVenda || ""; // Preenche a nova data
+
                 document.getElementById("corretor").value = dados.corretor || "";
                 document.getElementById("valor").value = dados.valor || "";
                 document.getElementById("vidas").value = dados.vidas || "";
@@ -134,16 +136,11 @@
                 document.getElementById("operadora").value = dados.operadora || "";
                 document.getElementById("plano").value = dados.plano || "";
                 document.getElementById("status").value = dados.status || "";
-
-            } else {
-                alert("Processo não encontrado!");
-                window.location.href = "lista.html";
             }
         }
 
-        carregarDados(); // Roda assim que a página abre
+        carregarDados();
 
-        // 3. SALVAR ALTERAÇÕES (UPDATE)
         document.getElementById("btnAtualizar").addEventListener("click", async () => {
             try {
                 const docRef = doc(db, "processos", id);
@@ -152,6 +149,7 @@
                     nome: document.getElementById("nome").value,
                     proposta: document.getElementById("proposta").value,
                     dataProcesso: document.getElementById("dataProcesso").value,
+                    dataVenda: document.getElementById("dataVenda").value, // Salva a nova data
                     corretor: document.getElementById("corretor").value,
                     valor: document.getElementById("valor").value,
                     vidas: document.getElementById("vidas").value,
@@ -163,10 +161,9 @@
 
                 alert("Atualizado com sucesso!");
                 window.location.href = "lista.html";
-
             } catch (e) {
                 console.error(e);
-                alert("Erro ao atualizar: " + e.message);
+                alert("Erro ao atualizar");
             }
         });
     </script>
