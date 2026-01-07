@@ -107,7 +107,7 @@
                     </div>
                     
                     <div class="actions">
-                        <button class="btn-edit" onclick="editar('${id}', '${dados.status}')">Mudar Status</button>
+                        <a href="editar.html?id=${id}" class="btn-edit" style="text-decoration:none; display:inline-block;">✏️ Editar</a>
                         <button class="btn-del" onclick="deletar('${id}')">Excluir</button>
                     </div>
                 `;
@@ -121,14 +121,6 @@
                 await deleteDoc(doc(db, "processos", id));
             }
         };
-
-        // EDITAR APENAS STATUS (Para edição completa, seria ideal uma nova tela)
-        window.editar = async (id, statusAtual) => {
-            const novoStatus = prompt("Digite o novo status (Análise, Pendente, Implantado, Cancelado):", statusAtual);
-            if (novoStatus) {
-                await updateDoc(doc(db, "processos", id), { status: novoStatus });
-            }
-        }
     </script>
 </body>
 </html>
