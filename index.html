@@ -16,6 +16,7 @@
         .btn-cadastro { background-color: #28a745; } /* Verde */
         .btn-lista { background-color: #007bff; }    /* Azul */
         .btn-relatorio { background-color: #6f42c1; } /* Roxo */
+        .btn-sair { background-color: #dc3545; cursor: pointer; border: none; } /* Vermelho */
     </style>
 </head>
 <body>
@@ -26,6 +27,13 @@
         <a href="cadastro.html" class="btn btn-cadastro">➕ Novo Processo</a>
         <a href="lista.html" class="btn btn-lista">📋 Ver/Editar Processos</a>
         <a href="vendas.html" class="btn btn-relatorio">📊 Total de Vendas</a>
+        
+        <button onclick="sair()" class="btn btn-sair">🚪 Sair do Sistema</button>
     </div>
+
+    <script type="module">
+        // Importa o arquivo que verifica se você está logado
+        import './autenticacao.js';
+    </script>
 </body>
 </html>
