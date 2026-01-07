@@ -26,7 +26,7 @@
 
     <div class="header-area">
         <a href="index.html" class="back-link">⬅ Voltar ao Menu</a>
-        <h2>📊 Desempenho de Vendas</h2>
+        <h2>📊 Relatório (Por Data de Cadastro)</h2>
     </div>
 
     <div id="totalGeral" class="total-geral">Carregando dados...</div>
@@ -39,7 +39,6 @@
         const divLista = document.getElementById("listaRelatorios");
         const divTotal = document.getElementById("totalGeral");
 
-        // Traz tudo do banco
         const q = query(collection(db, "processos")); 
 
         onSnapshot(q, (snapshot) => {
@@ -53,15 +52,13 @@
                 // 1. Só conta se for Implantado
                 if (!item.status || !item.status.includes("Implantado")) return;
 
-                // 2. LÓGICA DA DATA: Usa dataVenda. Se não tiver, usa dataProcesso (para compatibilidade)
-                const dataReferencia = item.dataVenda || item.dataProcesso;
+                // 2. CORREÇÃO: Usa estritamente a DATA DO CADASTRO (Processo)
+                const dataReferencia = item.dataProcesso; 
                 
-                if (!dataReferencia) return; // Se não tiver data nenhuma, pula
+                if (!dataReferencia) return; 
                 
-                // Extrai Mês e Ano para agrupar
-                const mesAnoKey = dataReferencia.substring(0, 7); // Ex: "2025-11"
-                
-                // Cria nome legível
+                // Extrai Mês e Ano
+                const mesAnoKey = dataReferencia.substring(0, 7); 
                 const dataObj = new Date(dataReferencia + "T12:00:00"); 
                 const mesNome = dataObj.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
 
@@ -85,7 +82,7 @@
                 totalzaoVidas += vidasLimpo;
             });
 
-            // --- RENDERIZAR ---
+            // RENDERIZAÇÃO
             divTotal.innerHTML = `
                 <h3 style="margin:0 0 10px 0;">Total Geral (Implantado)</h3>
                 <span style="font-size:1.8em; font-weight:bold;">${formatarMoeda(totalzaoValor)}</span>
