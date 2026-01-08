@@ -10,13 +10,17 @@
         label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.9em; color: #555; }
         input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
         
-        /* Estilo específico para a caixa de texto ficar maior */
         textarea { resize: vertical; font-family: Arial, sans-serif; }
 
         button { width: 100%; padding: 15px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px; font-weight: bold; }
+        button:hover { background-color: #218838; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; } /* Botão desativado */
+
         .back-link { display: block; margin-bottom: 20px; color: #007bff; text-decoration: none; font-weight: bold; }
         .row { display: flex; gap: 10px; }
         .col { flex: 1; }
+        
+        .loading { text-align: center; display: none; margin-top: 10px; color: #28a745; font-weight: bold; }
     </style>
 </head>
 <body style="display: none;">
@@ -40,7 +44,7 @@
 
     <div class="row">
         <div class="col">
-            <label>Número da Proposta</label>
+            <label>Número da Proposta (Único)</label>
             <input type="text" id="proposta" placeholder="Ex: 123456">
         </div>
         <div class="col">
@@ -94,7 +98,7 @@
     </div>
 
     <label>📝 Anotações / Pendências</label>
-    <textarea id="anotacoes" rows="3" placeholder="Ex: Falta comprovante de residência; Cliente viajou..."></textarea>
+    <textarea id="anotacoes" rows="3" placeholder="Ex: Falta comprovante..."></textarea>
 
     <label>Plano Contratado</label>
     <input type="text" id="plano" placeholder="Ex: Nacional Flex...">
@@ -111,18 +115,24 @@
         <option value="Cancelado">Cancelado</option>
     </select>
     
+    <div id="msgCarregando" class="loading">Verificando duplicidade...</div>
     <button id="btnSalvar">Salvar Processo</button>
 
     <script type="module">
         import { db } from './config.js';
-        import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        // ADICIONADO: query, where, getDocs para buscar duplicatas
+        import { collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import './autenticacao.js';
 
         document.getElementById("dataProcesso").valueAsDate = new Date();
 
         document.getElementById("btnSalvar").addEventListener("click", async () => {
+            const btn = document.getElementById("btnSalvar");
+            const loading = document.getElementById("msgCarregando");
+
+            // Captura valores
             const nome = document.getElementById("nome").value;
-            const proposta = document.getElementById("proposta").value;
+            const proposta = document.getElementById("proposta").value.trim(); // .trim() remove espaços vazios no final
             const dataProcesso = document.getElementById("dataProcesso").value;
             const dataVenda = document.getElementById("dataVenda").value;
             const corretor = document.getElementById("corretor").value;
@@ -132,13 +142,32 @@
             const operadora = document.getElementById("operadora").value;
             const plano = document.getElementById("plano").value;
             const status = document.getElementById("status").value;
-            const anotacoes = document.getElementById("anotacoes").value; // Captura a anotação
+            const anotacoes = document.getElementById("anotacoes").value;
 
-            if(nome === "" || proposta === "") { alert("Preencha Nome e Proposta!"); return; }
+            if(nome === "" || proposta === "") { 
+                alert("Preencha Nome e Proposta!"); 
+                return; 
+            }
+
+            // TRAVA O BOTÃO
+            btn.disabled = true;
+            btn.innerText = "Salvando...";
+            loading.style.display = "block";
 
             const dataVendaFinal = dataVenda || dataProcesso;
 
             try {
+                // --- VERIFICAÇÃO DE DUPLICIDADE (PROPOSTA) ---
+                const qProposta = query(collection(db, "processos"), where("proposta", "==", proposta));
+                const snapProposta = await getDocs(qProposta);
+
+                if (!snapProposta.empty) {
+                    alert(`❌ ATENÇÃO: A Proposta nº ${proposta} JÁ ESTÁ CADASTRADA! \n\nVerifique se você não está lançando duas vezes.`);
+                    resetarBotao();
+                    return; // Para tudo e não salva
+                }
+
+                // Se passou, salva!
                 await addDoc(collection(db, "processos"), {
                     nome: nome,
                     proposta: proposta,
@@ -151,15 +180,23 @@
                     operadora: operadora,
                     plano: plano,
                     status: status,
-                    anotacoes: anotacoes, // Salva no banco
+                    anotacoes: anotacoes,
                     criadoEm: new Date()
                 });
                 
-                alert("Salvo com sucesso!");
+                alert("✅ Processo salvo com sucesso!");
                 window.location.href = "lista.html"; 
+
             } catch (e) {
                 console.error(e);
                 alert("Erro ao salvar: " + e.message);
+                resetarBotao();
+            }
+
+            function resetarBotao() {
+                btn.disabled = false;
+                btn.innerText = "Salvar Processo";
+                loading.style.display = "none";
             }
         });
     </script>
