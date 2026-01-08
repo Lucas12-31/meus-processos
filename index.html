@@ -7,15 +7,18 @@
     <style>
         body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; text-align: center; background-color: #f4f4f4; }
         .menu-box { background: white; padding: 40px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        p { color: #666; margin-bottom: 30px; }
+        h1 { color: #333; margin-bottom: 5px; }
+        p { color: #666; margin-bottom: 20px; }
         
-        .btn { display: block; width: 100%; padding: 15px; margin: 10px 0; text-decoration: none; color: white; border-radius: 5px; font-size: 18px; font-weight: bold; transition: opacity 0.2s; }
+        .section-title { text-align: left; font-size: 0.9em; font-weight: bold; color: #888; margin-top: 20px; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+
+        .btn { display: block; width: 100%; padding: 15px; margin: 10px 0; text-decoration: none; color: white; border-radius: 5px; font-size: 18px; font-weight: bold; transition: opacity 0.2s; box-sizing: border-box; }
         .btn:hover { opacity: 0.9; }
 
         .btn-cadastro { background-color: #28a745; } /* Verde */
         .btn-lista { background-color: #007bff; }    /* Azul */
         .btn-relatorio { background-color: #6f42c1; } /* Roxo */
+        .btn-corretor { background-color: #fd7e14; }  /* Laranja para Corretores */
         .btn-sair { background-color: #dc3545; cursor: pointer; border: none; } /* Vermelho */
     </style>
 </head>
@@ -24,16 +27,21 @@
         <h1>Gerenciador de Processos</h1>
         <p>Selecione uma opção:</p>
         
+        <div class="section-title">🚀 VENDAS & PROCESSOS</div>
         <a href="cadastro.html" class="btn btn-cadastro">➕ Novo Processo</a>
         <a href="lista.html" class="btn btn-lista">📋 Ver/Editar Processos</a>
         <a href="vendas.html" class="btn btn-relatorio">📊 Total de Vendas</a>
+
+        <div class="section-title">👥 GESTÃO DE CORRETORES</div>
+        <a href="cadastro_corretor.html" class="btn btn-corretor">👤 Novo Corretor</a>
+        <a href="lista_corretores.html" class="btn btn-corretor" style="background-color: #e67e22;">📇 Lista de Corretores</a>
         
+        <div class="section-title">⚙️ SISTEMA</div>
         <a href="#" onclick="sair()" class="btn btn-sair">🚪 Sair do Sistema</a>
     </div>
 
     <script type="module">
-        // Importa o arquivo que verifica se você está logado
         import './autenticacao.js';
     </script>
-<body style="display: none;">
+</body>
 </html>
