@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lista de Corretores</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #f4f4f4;}
+        
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-novo { background-color: #e67e22; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; }
+        .back-link { color: #555; text-decoration: none; font-weight: bold; }
+
+        /* Barra de Busca */
+        .search-box { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 20px; box-sizing: border-box; }
+
+        /* Card do Corretor */
+        .card { background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 6px solid #e67e22; }
+        
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
+        .card-name { font-size: 1.2em; font-weight: bold; color: #333; }
+        .card-code { color: #888; font-size: 0.9em; }
+
+        .grade-badge { padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; background: #fff3cd; color: #856404; }
+
+        .info-row { margin: 5px 0; font-size: 0.95em; color: #555; }
+        .info-label { font-weight: bold; color: #333; margin-right: 5px; }
+        
+        /* Destaque para PIX */
+        .pix-box { background: #f0fdf4; color: #166534; padding: 8px; border-radius: 4px; margin-top: 10px; font-family: monospace; font-size: 1em; border: 1px dashed #166534; }
+
+        .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px; }
+        button, .btn-link { padding: 6px 12px; cursor: pointer; border: none; border-radius: 4px; color: white; font-size: 14px; text-decoration: none; }
+        .btn-del { background: #dc3545; }
+        .btn-edit { background: #ffc107; color: #333; }
+    </style>
+</head>
+<body style="display: none;">
+
+    <div class="header-area">
+        <a href="index.html" class="back-link">⬅ Voltar ao Menu</a>
+        <h2>Equipe de Corretores</h2>
+        <a href="cadastro_corretor.html" class="btn-novo">+ Novo Corretor</a>
+    </div>
+
+    <input type="text" id="busca" class="search-box" placeholder="🔎 Buscar por Nome ou Código...">
+
+    <div id="lista">Carregando...</div>
+
+    <script type="module">
+        import { db } from './config.js';
+        import { collection, onSnapshot, doc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import './autenticacao.js';
+
+        const listaDiv = document.getElementById("lista");
+        const buscaInput = document.getElementById("busca");
+        let todosCorretores = [];
+
+        // Busca na coleção CORRETORES
+        const q = query(collection(db, "corretores"), orderBy("nome"));
+
+        onSnapshot(q, (snapshot) => {
+            todosCorretores = [];
+            snapshot.forEach((doc) => {
+                todosCorretores.push({ id: doc.id, ...doc.data() });
+            });
+            filtrarEExibir();
+        });
+
+        function filtrarEExibir() {
+            const termo = buscaInput.value.toLowerCase();
+            listaDiv.innerHTML = "";
+
+            const filtrados = todosCorretores.filter(c => 
+                (c.nome && c.nome.toLowerCase().includes(termo)) || 
+                (c.codigo && c.codigo.toLowerCase().includes(termo))
+            );
+
+            if (filtrados.length === 0) {
+                listaDiv.innerHTML = "<p style='text-align:center'>Nenhum corretor encontrado.</p>";
+                return;
+            }
+
+            filtrados.forEach((dados) => {
+                const itemDiv = document.createElement("div");
+                itemDiv.className = "card";
+
+                itemDiv.innerHTML = `
+                    <div class="card-header">
+                        <div>
+                            <div class="card-name">${dados.nome}</div>
+                            <div class="card-code">Cód: ${dados.codigo || '--'}</div>
+                        </div>
+                        <span class="grade-badge">${dados.grade}</span>
+                    </div>
+
+                    <div class="info-row"><span class="info-label">📞 Tel:</span> ${dados.telefone || '--'}</div>
+                    <div class="info-row"><span class="info-label">📧 Email:</span> ${dados.email || '--'}</div>
+                    <div class="info-row"><span class="info-label">🆔 CPF:</span> ${dados.cpf || '--'}</div>
+                    
+                    <div class="pix-box">💲 PIX: ${dados.pix || 'Não informado'}</div>
+
+                    <div class="actions">
+                        <a href="editar_corretor.html?id=${dados.id}" class="btn-link btn-edit">✏️ Editar</a>
+                        <button class="btn-del" onclick="deletar('${dados.id}')">Excluir</button>
+                    </div>
+                `;
+                listaDiv.appendChild(itemDiv);
+            });
+        }
+
+        buscaInput.addEventListener("keyup", filtrarEExibir);
+
+        window.deletar = async (id) => {
+            if(confirm("Tem certeza que deseja remover este corretor da base?")) {
+                await deleteDoc(doc(db, "corretores", id));
+            }
+        };
+    </script>
+</body>
+</html>
