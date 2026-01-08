@@ -5,12 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Meus Processos</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 900px; margin: 20px auto; padding: 20px; background-color: #f4f4f4;}
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 900px; margin: 20px auto; padding: 20px; background-color: #f4f4f4;}
         
         .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         .btn-novo { background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; }
         .back-link { color: #555; text-decoration: none; font-weight: bold; }
 
+        /* FILTROS */
         .filter-bar { 
             background: white; 
             padding: 15px; 
@@ -25,6 +26,7 @@
         .filter-group label { display: block; font-size: 0.8em; font-weight: bold; color: #555; margin-bottom: 5px; }
         .filter-bar select, .filter-bar input { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
 
+        /* CARDS */
         .card { background: white; padding: 20px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 6px solid #007bff; }
         .card-header { display: flex; justify-content: space-between; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 10px; }
         .card-title { font-size: 1.2em; font-weight: bold; color: #333; }
@@ -40,11 +42,27 @@
         .btn-del { background: #dc3545; }
         .btn-edit { background: #ffc107; color: #333; }
         .results-count { font-size: 0.9em; color: #666; margin-bottom: 10px; text-align: right; }
+
+        /* --- ESTILO NOVO DA PAGINAÇÃO --- */
+        .pagination-area { display: flex; justify-content: center; gap: 5px; margin-top: 20px; }
+        .page-btn { 
+            background: white; 
+            border: 1px solid #ddd; 
+            color: #333; 
+            padding: 8px 12px; 
+            cursor: pointer; 
+            border-radius: 4px; 
+            font-weight: bold;
+        }
+        .page-btn:hover { background-color: #eee; }
+        .page-btn.active { 
+            background-color: #007bff; 
+            color: white; 
+            border-color: #007bff; 
+        }
     </style>
 </head>
-<body>
-
-    <div class="header-area">
+<body style="display: none;"> <div class="header-area">
         <a href="index.html" class="back-link">⬅ Voltar ao Menu</a>
         <h2>Lista de Processos</h2>
         <a href="cadastro.html" class="btn-novo">+ Novo Processo</a>
@@ -93,20 +111,29 @@
     </div>
 
     <div class="results-count" id="contador">Carregando...</div>
+    
     <div id="lista"></div>
+
+    <div id="pagination" class="pagination-area"></div>
 
     <script type="module">
         import { db } from './config.js';
-        import './autenticacao.js';
         import { collection, onSnapshot, doc, deleteDoc, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import './autenticacao.js'; // Segurança
 
         const listaDiv = document.getElementById("lista");
         const contadorDiv = document.getElementById("contador");
+        const paginacaoDiv = document.getElementById("pagination");
+
         const inputBusca = document.getElementById("filtroBusca");
         const selectOperadora = document.getElementById("filtroOperadora");
         const selectStatus = document.getElementById("filtroStatus");
 
-        let todosProcessos = [];
+        let todosProcessos = []; // Dados brutos do banco
+        
+        // --- CONFIGURAÇÃO DA PAGINAÇÃO ---
+        let paginaAtual = 1;
+        const itensPorPagina = 5; // <--- MUDE AQUI SE QUISER MAIS ITENS
 
         const q = query(collection(db, "processos"), orderBy("criadoEm", "desc"));
 
@@ -123,6 +150,7 @@
             const operadoraSelecionada = selectOperadora.value;
             const statusSelecionado = selectStatus.value;
 
+            // Filtra os dados originais
             const filtrados = todosProcessos.filter(item => {
                 const nomeMatch = item.nome && item.nome.toLowerCase().includes(termo);
                 const propMatch = item.proposta && item.proposta.toLowerCase().includes(termo);
@@ -132,11 +160,19 @@
                 return matchTexto && matchOperadora && matchStatus;
             });
 
+            // IMPORTANTE: Se o usuário filtrar, volta pra página 1 para não bugar a visualização
+            // (Ex: se ele tava na pág 5 e filtra algo que só tem 2 resultados)
+            // Mas só reseta se for uma nova busca (aqui simplificado, sempre reseta ao filtrar)
+            // Para manter a página ao excluir, seria outra lógica, mas assim fica seguro.
+            
+            // Renderiza passando a lista já filtrada
             renderizarLista(filtrados);
         }
 
         function renderizarLista(listaDeDados) {
             listaDiv.innerHTML = "";
+            paginacaoDiv.innerHTML = ""; // Limpa os botões antigos
+            
             contadorDiv.innerText = `${listaDeDados.length} processos encontrados`;
 
             if (listaDeDados.length === 0) {
@@ -144,11 +180,18 @@
                 return;
             }
 
-            listaDeDados.forEach((dados) => {
-                // CORREÇÃO: Prioriza Data Venda. Se não tiver, usa Cadastro.
+            // --- LÓGICA DE CORTE (SLICE) DA PAGINAÇÃO ---
+            const inicio = (paginaAtual - 1) * itensPorPagina;
+            const fim = inicio + itensPorPagina;
+            
+            // Pega apenas a fatia da página atual (Ex: do item 0 ao 5)
+            const processosDaPagina = listaDeDados.slice(inicio, fim);
+
+            // Renderiza APENAS os itens da página atual
+            processosDaPagina.forEach((dados) => {
+                // Formatações
                 let dataParaMostrar = dados.dataVenda || dados.dataProcesso;
                 let dataFormatada = "---";
-                
                 if(dataParaMostrar) {
                     const partes = dataParaMostrar.split('-'); 
                     dataFormatada = `${partes[2]}/${partes[1]}/${partes[0]}`;
@@ -197,18 +240,54 @@
                 `;
                 listaDiv.appendChild(itemDiv);
             });
+
+            // --- DESENHAR OS BOTÕES DE PÁGINA (1, 2, 3...) ---
+            const totalPaginas = Math.ceil(listaDeDados.length / itensPorPagina);
+
+            // Só mostra paginação se tiver mais de 1 página
+            if (totalPaginas > 1) {
+                for (let i = 1; i <= totalPaginas; i++) {
+                    const btn = document.createElement("button");
+                    btn.innerText = i;
+                    btn.className = "page-btn";
+                    
+                    // Se for a página atual, pinta de azul
+                    if (i === paginaAtual) {
+                        btn.classList.add("active");
+                    }
+
+                    // Ao clicar, muda a página e recarrega a lista
+                    btn.addEventListener("click", () => {
+                        paginaAtual = i;
+                        // Chama renderizar de novo, mas com a lista completa FILTRADA que já temos na memória
+                        // Precisamos refazer o filtro ou passar a lista de novo.
+                        // O jeito mais fácil aqui é chamar aplicarFiltros() de novo, mas setando a pagina antes.
+                        // PORÉM, aplicarFiltros reseta para pag 1. Vamos ajustar isso.
+                        renderizarLista(listaDeDados); // Renderiza a mesma lista, mas com nova paginaAtual
+                        window.scrollTo(0, 0); // Sobe pro topo da tela
+                    });
+
+                    paginacaoDiv.appendChild(btn);
+                }
+            }
         }
+
+        // Ajuste no evento de filtro para resetar a página para 1 sempre que pesquisar
+        function resetarEFiltrar() {
+            paginaAtual = 1;
+            aplicarFiltros();
+        }
+
+        // Event Listeners (agora chamam a função que reseta a página)
+        inputBusca.addEventListener("keyup", resetarEFiltrar);
+        selectOperadora.addEventListener("change", resetarEFiltrar);
+        selectStatus.addEventListener("change", resetarEFiltrar);
 
         window.deletar = async (id) => {
             if(confirm("Tem certeza que deseja EXCLUIR este processo?")) {
                 await deleteDoc(doc(db, "processos", id));
             }
         };
-
-        // Event Listeners
-        inputBusca.addEventListener("keyup", aplicarFiltros);
-        selectOperadora.addEventListener("change", aplicarFiltros);
-        selectStatus.addEventListener("change", aplicarFiltros);
     </script>
 </body>
 </html>
