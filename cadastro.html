@@ -14,7 +14,7 @@
 
         button { width: 100%; padding: 15px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px; font-weight: bold; }
         button:hover { background-color: #218838; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; } /* Botão desativado */
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
 
         .back-link { display: block; margin-bottom: 20px; color: #007bff; text-decoration: none; font-weight: bold; }
         .row { display: flex; gap: 10px; }
@@ -49,7 +49,9 @@
         </div>
         <div class="col">
             <label>Corretor</label>
-            <input type="text" id="corretor" placeholder="Nome do Corretor">
+            <select id="corretor">
+                <option value="">Carregando lista...</option>
+            </select>
         </div>
     </div>
 
@@ -120,11 +122,40 @@
 
     <script type="module">
         import { db } from './config.js';
-        // ADICIONADO: query, where, getDocs para buscar duplicatas
-        import { collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        // ADICIONADO: orderBy para trazer os corretores em ordem alfabética
+        import { collection, addDoc, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import './autenticacao.js';
 
         document.getElementById("dataProcesso").valueAsDate = new Date();
+
+        // --- NOVA FUNÇÃO: Carregar Corretores do Banco ---
+        async function carregarCorretores() {
+            const selectCorretor = document.getElementById("corretor");
+            
+            try {
+                // Busca no banco ordenado por nome
+                const q = query(collection(db, "corretores"), orderBy("nome"));
+                const querySnapshot = await getDocs(q);
+
+                // Limpa o select e põe a opção padrão
+                selectCorretor.innerHTML = '<option value="">Selecione um corretor...</option>';
+
+                querySnapshot.forEach((doc) => {
+                    const dados = doc.data();
+                    const option = document.createElement("option");
+                    option.value = dados.nome; // Salvamos o NOME do corretor no processo
+                    option.text = dados.nome;
+                    selectCorretor.appendChild(option);
+                });
+
+            } catch (error) {
+                console.error("Erro ao carregar corretores:", error);
+                selectCorretor.innerHTML = '<option value="">Erro ao carregar</option>';
+            }
+        }
+
+        // Chama a função assim que a tela abre
+        carregarCorretores();
 
         document.getElementById("btnSalvar").addEventListener("click", async () => {
             const btn = document.getElementById("btnSalvar");
@@ -132,10 +163,10 @@
 
             // Captura valores
             const nome = document.getElementById("nome").value;
-            const proposta = document.getElementById("proposta").value.trim(); // .trim() remove espaços vazios no final
+            const proposta = document.getElementById("proposta").value.trim();
             const dataProcesso = document.getElementById("dataProcesso").value;
             const dataVenda = document.getElementById("dataVenda").value;
-            const corretor = document.getElementById("corretor").value;
+            const corretor = document.getElementById("corretor").value; // Agora pega do Select
             const valor = document.getElementById("valor").value;
             const vidas = document.getElementById("vidas").value;
             const modalidade = document.getElementById("modalidade").value;
@@ -148,8 +179,12 @@
                 alert("Preencha Nome e Proposta!"); 
                 return; 
             }
+            
+            if(corretor === "") {
+                alert("Selecione um Corretor!");
+                return;
+            }
 
-            // TRAVA O BOTÃO
             btn.disabled = true;
             btn.innerText = "Salvando...";
             loading.style.display = "block";
@@ -157,23 +192,21 @@
             const dataVendaFinal = dataVenda || dataProcesso;
 
             try {
-                // --- VERIFICAÇÃO DE DUPLICIDADE (PROPOSTA) ---
                 const qProposta = query(collection(db, "processos"), where("proposta", "==", proposta));
                 const snapProposta = await getDocs(qProposta);
 
                 if (!snapProposta.empty) {
-                    alert(`❌ ATENÇÃO: A Proposta nº ${proposta} JÁ ESTÁ CADASTRADA! \n\nVerifique se você não está lançando duas vezes.`);
+                    alert(`❌ ATENÇÃO: A Proposta nº ${proposta} JÁ ESTÁ CADASTRADA!`);
                     resetarBotao();
-                    return; // Para tudo e não salva
+                    return; 
                 }
 
-                // Se passou, salva!
                 await addDoc(collection(db, "processos"), {
                     nome: nome,
                     proposta: proposta,
                     dataProcesso: dataProcesso,
                     dataVenda: dataVendaFinal,
-                    corretor: corretor,
+                    corretor: corretor, // Salva o nome escolhido na lista
                     valor: valor,
                     vidas: vidas,
                     modalidade: modalidade,
