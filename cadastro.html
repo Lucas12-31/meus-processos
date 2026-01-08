@@ -8,21 +8,25 @@
         body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background-color: #f8f9fa; }
         h2 { color: #333; text-align: center; }
         label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.9em; color: #555; }
-        input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        input, select, textarea { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        
+        /* Estilo específico para a caixa de texto ficar maior */
+        textarea { resize: vertical; font-family: Arial, sans-serif; }
+
         button { width: 100%; padding: 15px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px; font-weight: bold; }
         .back-link { display: block; margin-bottom: 20px; color: #007bff; text-decoration: none; font-weight: bold; }
         .row { display: flex; gap: 10px; }
         .col { flex: 1; }
     </style>
 </head>
-<body>
+<body style="display: none;">
 
     <a href="index.html" class="back-link">⬅ Voltar ao Menu</a>
     <h2>Cadastrar Novo Processo</h2>
     
     <div class="row">
         <div class="col">
-            <label>📅 Data da Venda </label>
+            <label>📅 Data da Venda (Relatório)</label>
             <input type="date" id="dataVenda">
         </div>
         <div class="col">
@@ -89,6 +93,9 @@
         </div>
     </div>
 
+    <label>📝 Anotações / Pendências</label>
+    <textarea id="anotacoes" rows="3" placeholder="Ex: Falta comprovante de residência; Cliente viajou..."></textarea>
+
     <label>Plano Contratado</label>
     <input type="text" id="plano" placeholder="Ex: Nacional Flex...">
 
@@ -108,17 +115,16 @@
 
     <script type="module">
         import { db } from './config.js';
-        import './autenticacao.js';
         import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import './autenticacao.js';
 
-        // Preencher data de cadastro com hoje automaticamente
         document.getElementById("dataProcesso").valueAsDate = new Date();
 
         document.getElementById("btnSalvar").addEventListener("click", async () => {
             const nome = document.getElementById("nome").value;
             const proposta = document.getElementById("proposta").value;
-            const dataProcesso = document.getElementById("dataProcesso").value; // Data Cadastro
-            const dataVenda = document.getElementById("dataVenda").value;       // Data Venda (NOVO)
+            const dataProcesso = document.getElementById("dataProcesso").value;
+            const dataVenda = document.getElementById("dataVenda").value;
             const corretor = document.getElementById("corretor").value;
             const valor = document.getElementById("valor").value;
             const vidas = document.getElementById("vidas").value;
@@ -126,13 +132,10 @@
             const operadora = document.getElementById("operadora").value;
             const plano = document.getElementById("plano").value;
             const status = document.getElementById("status").value;
+            const anotacoes = document.getElementById("anotacoes").value; // Captura a anotação
 
-            if(nome === "" || proposta === "") { 
-                alert("Preencha Nome e Proposta!"); 
-                return; 
-            }
+            if(nome === "" || proposta === "") { alert("Preencha Nome e Proposta!"); return; }
 
-            // Se o usuário não preencher a data da venda, o sistema usa a data do cadastro como "quebra-galho"
             const dataVendaFinal = dataVenda || dataProcesso;
 
             try {
@@ -140,7 +143,7 @@
                     nome: nome,
                     proposta: proposta,
                     dataProcesso: dataProcesso,
-                    dataVenda: dataVendaFinal, // Salva o novo campo
+                    dataVenda: dataVendaFinal,
                     corretor: corretor,
                     valor: valor,
                     vidas: vidas,
@@ -148,6 +151,7 @@
                     operadora: operadora,
                     plano: plano,
                     status: status,
+                    anotacoes: anotacoes, // Salva no banco
                     criadoEm: new Date()
                 });
                 
