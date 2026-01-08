@@ -33,6 +33,16 @@
         button, .btn-link { padding: 6px 12px; cursor: pointer; border: none; border-radius: 4px; color: white; font-size: 14px; text-decoration: none; }
         .btn-del { background: #dc3545; }
         .btn-edit { background: #ffc107; color: #333; }
+        
+        /* Contagem de Resultados */
+        .results-count { font-size: 0.9em; color: #666; margin-bottom: 10px; text-align: right; }
+
+        /* PAGINAÇÃO */
+        .pagination-area { display: flex; justify-content: center; gap: 5px; margin-top: 20px; }
+        .page-btn { background: white; border: 1px solid #ddd; color: #333; padding: 8px 12px; cursor: pointer; border-radius: 4px; font-weight: bold; }
+        .page-btn:hover { background-color: #eee; }
+        /* Cor laranja para indicar a página ativa dos corretores */
+        .page-btn.active { background-color: #e67e22; color: white; border-color: #e67e22; }
     </style>
 </head>
 <body style="display: none;">
@@ -45,7 +55,10 @@
 
     <input type="text" id="busca" class="search-box" placeholder="🔎 Buscar por Nome ou Código...">
 
-    <div id="lista">Carregando...</div>
+    <div class="results-count" id="contador">Carregando...</div>
+    <div id="lista"></div>
+    
+    <div id="pagination" class="pagination-area"></div>
 
     <script type="module">
         import { db } from './config.js';
@@ -54,9 +67,14 @@
 
         const listaDiv = document.getElementById("lista");
         const buscaInput = document.getElementById("busca");
-        let todosCorretores = [];
+        const contadorDiv = document.getElementById("contador");
+        const paginacaoDiv = document.getElementById("pagination");
 
-        // Busca na coleção CORRETORES
+        let todosCorretores = [];
+        let paginaAtual = 1;
+        const itensPorPagina = 5; // Define quantos corretores aparecem por vez
+
+        // Busca na coleção CORRETORES ordenado por nome
         const q = query(collection(db, "corretores"), orderBy("nome"));
 
         onSnapshot(q, (snapshot) => {
@@ -69,19 +87,30 @@
 
         function filtrarEExibir() {
             const termo = buscaInput.value.toLowerCase();
-            listaDiv.innerHTML = "";
-
+            
+            // 1. FILTRAR
             const filtrados = todosCorretores.filter(c => 
                 (c.nome && c.nome.toLowerCase().includes(termo)) || 
                 (c.codigo && c.codigo.toLowerCase().includes(termo))
             );
 
+            // Atualiza contador
+            contadorDiv.innerText = `${filtrados.length} corretores encontrados`;
+            listaDiv.innerHTML = "";
+            paginacaoDiv.innerHTML = ""; // Limpa botões antigos
+
             if (filtrados.length === 0) {
-                listaDiv.innerHTML = "<p style='text-align:center'>Nenhum corretor encontrado.</p>";
+                listaDiv.innerHTML = "<p style='text-align:center; color:#888'>Nenhum corretor encontrado.</p>";
                 return;
             }
 
-            filtrados.forEach((dados) => {
+            // 2. PAGINAR (Corte dos dados)
+            const inicio = (paginaAtual - 1) * itensPorPagina;
+            const fim = inicio + itensPorPagina;
+            const corretoresDaPagina = filtrados.slice(inicio, fim);
+
+            // 3. RENDERIZAR LISTA
+            corretoresDaPagina.forEach((dados) => {
                 const itemDiv = document.createElement("div");
                 itemDiv.className = "card";
 
@@ -107,9 +136,36 @@
                 `;
                 listaDiv.appendChild(itemDiv);
             });
+
+            // 4. DESENHAR BOTÕES DE PAGINAÇÃO
+            const totalPaginas = Math.ceil(filtrados.length / itensPorPagina);
+
+            if (totalPaginas > 1) {
+                for (let i = 1; i <= totalPaginas; i++) {
+                    const btn = document.createElement("button");
+                    btn.innerText = i;
+                    btn.className = "page-btn";
+                    
+                    if (i === paginaAtual) btn.classList.add("active");
+
+                    btn.addEventListener("click", () => {
+                        paginaAtual = i;
+                        filtrarEExibir(); // Redesenha com a nova página
+                        window.scrollTo(0, 0); // Sobe pro topo
+                    });
+
+                    paginacaoDiv.appendChild(btn);
+                }
+            }
         }
 
-        buscaInput.addEventListener("keyup", filtrarEExibir);
+        // Reseta para a página 1 ao pesquisar para não bugar
+        function resetarEFiltrar() {
+            paginaAtual = 1;
+            filtrarEExibir();
+        }
+
+        buscaInput.addEventListener("keyup", resetarEFiltrar);
 
         window.deletar = async (id) => {
             if(confirm("Tem certeza que deseja remover este corretor da base?")) {
