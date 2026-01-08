@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novo Corretor</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 20px auto; padding: 20px; background-color: #fff4e6; } /* Fundo laranja clarinho */
+        h2 { color: #d35400; text-align: center; }
+        label { display: block; margin-top: 10px; font-weight: bold; font-size: 0.9em; color: #555; }
+        input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        
+        button { width: 100%; padding: 15px; background-color: #e67e22; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px; font-weight: bold; }
+        button:hover { background-color: #d35400; }
+
+        .back-link { display: block; margin-bottom: 20px; color: #d35400; text-decoration: none; font-weight: bold; }
+        .row { display: flex; gap: 10px; }
+        .col { flex: 1; }
+    </style>
+</head>
+<body style="display: none;">
+
+    <a href="index.html" class="back-link">⬅ Voltar ao Menu</a>
+    <h2>Cadastrar Corretor</h2>
+    
+    <div class="row">
+        <div class="col">
+            <label>Código</label>
+            <input type="text" id="codigo" placeholder="Ex: 001">
+        </div>
+        <div class="col">
+            <label>Grade</label>
+            <select id="grade">
+                <option value="Salão">Salão</option>
+                <option value="Free">Free</option>
+                <option value="Free Especial">Free Especial</option>
+            </select>
+        </div>
+    </div>
+
+    <label>Nome Completo</label>
+    <input type="text" id="nome">
+
+    <div class="row">
+        <div class="col">
+            <label>CPF</label>
+            <input type="text" id="cpf" placeholder="000.000.000-00">
+        </div>
+        <div class="col">
+            <label>Telefone / WhatsApp</label>
+            <input type="tel" id="telefone">
+        </div>
+    </div>
+
+    <label>E-mail</label>
+    <input type="email" id="email">
+
+    <label>Chave PIX</label>
+    <input type="text" id="pix" placeholder="CPF, Email ou Aleatória">
+    
+    <button id="btnSalvar">Salvar Corretor</button>
+
+    <script type="module">
+        import { db } from './config.js';
+        import { collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import './autenticacao.js';
+
+        document.getElementById("btnSalvar").addEventListener("click", async () => {
+            const nome = document.getElementById("nome").value;
+            const codigo = document.getElementById("codigo").value;
+            
+            if(nome === "") { alert("O nome é obrigatório!"); return; }
+
+            try {
+                // Salva na coleção NOVA chamada "corretores"
+                await addDoc(collection(db, "corretores"), {
+                    codigo: codigo,
+                    grade: document.getElementById("grade").value,
+                    nome: nome,
+                    cpf: document.getElementById("cpf").value,
+                    telefone: document.getElementById("telefone").value,
+                    email: document.getElementById("email").value,
+                    pix: document.getElementById("pix").value,
+                    criadoEm: new Date()
+                });
+                
+                alert("Corretor salvo com sucesso!");
+                window.location.href = "lista_corretores.html"; 
+            } catch (e) {
+                console.error(e);
+                alert("Erro ao salvar: " + e.message);
+            }
+        });
+    </script>
+</body>
+</html>
