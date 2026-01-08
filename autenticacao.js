@@ -1,28 +1,39 @@
 import { auth } from './config.js';
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
-// Verifica se está logado
+// O código roda assim que a página abre
 onAuthStateChanged(auth, (user) => {
-    if (!user) {
-        // Se NÃO tem usuário, manda pro Login
-        // Mas só se já não estivermos na página de login pra não dar loop infinito
-        if (!window.location.href.includes("login.html")) {
-            window.location.href = "login.html";
+    const isLoginPage = window.location.href.includes("login.html");
+
+    if (user) {
+        // --- CENÁRIO: USUÁRIO LOGADO ---
+        if (isLoginPage) {
+            // Se está logado e tenta entrar no login, joga pro menu
+            window.location.href = "index.html";
+        } else {
+            // Se está numa página interna (index, lista, vendas), REVELA o conteúdo
+            // "block" é o padrão do HTML para mostrar elementos
+            document.body.style.display = "block"; 
         }
     } else {
-        // Se JÁ tem usuário e tentar acessar o login, manda pro menu
-        if (window.location.href.includes("login.html")) {
-            window.location.href = "index.html";
+        // --- CENÁRIO: USUÁRIO NÃO LOGADO ---
+        if (!isLoginPage) {
+            // Se tenta acessar qualquer página interna, chuta pro login IMEDIATAMENTE
+            window.location.href = "login.html";
+        } else {
+            // Se já está no login, REVELA a tela de login
+            // "flex" é usado no login para centralizar a caixinha
+            document.body.style.display = "flex"; 
         }
     }
 });
 
-// Função de Sair (Logout) para usar nos botões
+// Função de Sair
 window.sair = async () => {
     try {
         await signOut(auth);
-        alert("Desconectado com sucesso!");
-        window.location.href = "login.html";
+        alert("Até logo!");
+        // O próprio onAuthStateChanged vai perceber que saiu e redirecionar
     } catch (error) {
         console.error("Erro ao sair", error);
     }
