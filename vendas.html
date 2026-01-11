@@ -41,7 +41,7 @@
         .month-count { background: #eee; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: bold; color: #555; }
 
         /* Estilo dos Rankings (Lateral) */
-        .ranking-section { margin-bottom: 30px; } /* Espaço entre Operadoras e Corretores */
+        .ranking-section { margin-bottom: 30px; } /* Espaço entre as seções */
         .section-title { font-size: 1.1em; color: #555; margin-bottom: 15px; font-weight: bold; border-bottom: 2px solid #ddd; padding-bottom: 5px; }
         
         .ranking-card { background: white; padding: 15px; margin-bottom: 10px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
@@ -76,6 +76,11 @@
 
         <div>
             <div class="ranking-section">
+                <div class="section-title">📋 Por Modalidade</div>
+                <div id="listaModalidades">Carregando...</div>
+            </div>
+
+            <div class="ranking-section">
                 <div class="section-title">🏆 Top Operadoras</div>
                 <div id="listaOperadoras">Carregando...</div>
             </div>
@@ -97,6 +102,7 @@
         const divTotal = document.getElementById("totalGeral");
         const divOperadoras = document.getElementById("listaOperadoras");
         const divCorretores = document.getElementById("listaCorretores");
+        const divModalidades = document.getElementById("listaModalidades"); // Captura a nova div
 
         const q = query(collection(db, "processos")); 
 
@@ -104,7 +110,8 @@
             // Estruturas de dados
             let dadosPorMes = {};
             let dadosPorOperadora = {};
-            let dadosPorCorretor = {}; // NOVO
+            let dadosPorCorretor = {};
+            let dadosPorModalidade = {}; // NOVO OBJETO
             
             let totalzaoValor = 0;
             let totalzaoVidas = 0;
@@ -115,7 +122,7 @@
                 // 1. FILTRO IMPLANTADO
                 if (!item.status || !item.status.includes("Implantado")) return;
 
-                // 2. DATA (Data de Cadastro)
+                // 2. DATA
                 const dataReferencia = item.dataProcesso; 
                 if (!dataReferencia) return; 
 
@@ -123,16 +130,14 @@
                 const valorLimpo = parseFloat(item.valor) || 0;
                 const vidasLimpo = parseFloat(item.vidas) || 0;
                 
-                // Mês/Ano
+                // Chaves de Agrupamento
                 const mesAnoKey = dataReferencia.substring(0, 7); 
                 const dataObj = new Date(dataReferencia + "T12:00:00"); 
                 const mesNome = dataObj.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
 
-                // Nomes (com tratamento para vazio)
                 const operadoraNome = item.operadora || "Não Informado";
-                // Tratamento especial para nome do corretor (capitalizar primeira letra fica bonito)
                 let corretorNome = item.corretor || "Não Informado";
-                
+                const modalidadeNome = item.modalidade || "Indefinido"; // Pega PF, PJ, etc
 
                 // --- POPULAR OBJETOS ---
                 
@@ -147,12 +152,17 @@
                 dadosPorOperadora[operadoraNome].valor += valorLimpo;
                 dadosPorOperadora[operadoraNome].vidas += vidasLimpo;
 
-                // C. Corretor (NOVO)
+                // C. Corretor
                 if (!dadosPorCorretor[corretorNome]) dadosPorCorretor[corretorNome] = { valor: 0, vidas: 0 };
                 dadosPorCorretor[corretorNome].valor += valorLimpo;
                 dadosPorCorretor[corretorNome].vidas += vidasLimpo;
 
-                // D. Total Geral
+                // D. Modalidade (NOVO CÁLCULO)
+                if (!dadosPorModalidade[modalidadeNome]) dadosPorModalidade[modalidadeNome] = { valor: 0, vidas: 0 };
+                dadosPorModalidade[modalidadeNome].valor += valorLimpo;
+                dadosPorModalidade[modalidadeNome].vidas += vidasLimpo;
+
+                // E. Total Geral
                 totalzaoValor += valorLimpo;
                 totalzaoVidas += vidasLimpo;
             });
@@ -219,10 +229,13 @@
                 }
             }
 
-            // 3. Operadoras (Direita Bloco 1)
+            // 3. Modalidades (Direita Bloco 1 - NOVO)
+            gerarHTMLRanking(dadosPorModalidade, divModalidades);
+
+            // 4. Operadoras (Direita Bloco 2)
             gerarHTMLRanking(dadosPorOperadora, divOperadoras);
 
-            // 4. Corretores (Direita Bloco 2)
+            // 5. Corretores (Direita Bloco 3)
             gerarHTMLRanking(dadosPorCorretor, divCorretores);
         });
 
