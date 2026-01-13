@@ -139,28 +139,24 @@
 
     <script type="module">
         import { db } from './config.js';
-        // ADICIONADO: orderBy para trazer os corretores em ordem alfabética
         import { collection, addDoc, query, where, getDocs, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import './autenticacao.js';
 
         document.getElementById("dataProcesso").valueAsDate = new Date();
 
-        // --- NOVA FUNÇÃO: Carregar Corretores do Banco ---
         async function carregarCorretores() {
             const selectCorretor = document.getElementById("corretor");
             
             try {
-                // Busca no banco ordenado por nome
                 const q = query(collection(db, "corretores"), orderBy("nome"));
                 const querySnapshot = await getDocs(q);
 
-                // Limpa o select e põe a opção padrão
                 selectCorretor.innerHTML = '<option value="">Selecione um corretor...</option>';
 
                 querySnapshot.forEach((doc) => {
                     const dados = doc.data();
                     const option = document.createElement("option");
-                    option.value = dados.nome; // Salvamos o NOME do corretor no processo
+                    option.value = dados.nome;
                     option.text = dados.nome;
                     selectCorretor.appendChild(option);
                 });
@@ -171,14 +167,12 @@
             }
         }
 
-        // Chama a função assim que a tela abre
         carregarCorretores();
 
         document.getElementById("btnSalvar").addEventListener("click", async () => {
             const btn = document.getElementById("btnSalvar");
             const loading = document.getElementById("msgCarregando");
 
-            // Captura valores
             const nome = document.getElementById("nome").value;
             const proposta = document.getElementById("proposta").value.trim();
             const dataProcesso = document.getElementById("dataProcesso").value;
@@ -223,7 +217,7 @@
                     proposta: proposta,
                     dataProcesso: dataProcesso,
                     dataVenda: dataVendaFinal,
-                    corretor: corretor, // Salva o nome escolhido na lista
+                    corretor: corretor, 
                     valor: valor,
                     vidas: vidas,
                     modalidade: modalidade,
