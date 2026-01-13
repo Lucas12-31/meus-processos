@@ -133,7 +133,6 @@
 
     <script type="module">
         import { db } from './config.js';
-        // Importamos getDocs, collection e orderBy para listar os corretores
         import { doc, getDoc, updateDoc, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import './autenticacao.js';
 
@@ -142,7 +141,6 @@
 
         if (!id) { window.location.href = "lista.html"; }
 
-        // 1. Função para carregar a lista de corretores no Select
         async function carregarCorretores() {
             const selectCorretor = document.getElementById("corretor");
             try {
@@ -163,12 +161,9 @@
             }
         }
 
-        // 2. Função principal que orquestra tudo
         async function iniciarPagina() {
-            // ESPERA carregar a lista de corretores PRIMEIRO
             await carregarCorretores();
 
-            // SÓ DEPOIS busca os dados do processo para preencher
             const docRef = doc(db, "processos", id);
             const docSnap = await getDoc(docRef);
 
@@ -180,7 +175,6 @@
                 document.getElementById("dataProcesso").value = dados.dataProcesso || "";
                 document.getElementById("dataVenda").value = dados.dataVenda || "";
                 
-                // Aqui a mágica acontece: como a lista já carregou, ele seleciona o correto
                 document.getElementById("corretor").value = dados.corretor || "";
                 
                 document.getElementById("valor").value = dados.valor || "";
@@ -193,7 +187,6 @@
             }
         }
 
-        // Roda tudo
         iniciarPagina();
 
         document.getElementById("btnAtualizar").addEventListener("click", async () => {
@@ -205,7 +198,7 @@
                     proposta: document.getElementById("proposta").value,
                     dataProcesso: document.getElementById("dataProcesso").value,
                     dataVenda: document.getElementById("dataVenda").value,
-                    corretor: document.getElementById("corretor").value, // Salva o novo valor do select
+                    corretor: document.getElementById("corretor").value, 
                     valor: document.getElementById("valor").value,
                     vidas: document.getElementById("vidas").value,
                     modalidade: document.getElementById("modalidade").value,
