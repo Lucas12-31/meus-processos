@@ -21,7 +21,7 @@
         
         button { width: 100%; padding: 15px; background-color: #e67e22; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 20px; font-weight: bold; }
         button:hover { background-color: #d35400; }
-        button:disabled { background-color: #ccc; cursor: not-allowed; } /* Estilo para botão desativado */
+        button:disabled { background-color: #ccc; cursor: not-allowed; } 
 
         .back-link { display: block; margin-bottom: 20px; color: #d35400; text-decoration: none; font-weight: bold; }
         .row { display: flex; gap: 10px; }
@@ -90,7 +90,6 @@
 
     <script type="module">
         import { db } from './config.js';
-        // Importamos 'query', 'where' e 'getDocs' para poder pesquisar antes de salvar
         import { collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import './autenticacao.js';
 
@@ -98,7 +97,6 @@
             const btn = document.getElementById("btnSalvar");
             const loading = document.getElementById("msgCarregando");
             
-            // Pega os valores
             const codigo = document.getElementById("codigo").value.trim();
             const cpf = document.getElementById("cpf").value.trim();
             const nome = document.getElementById("nome").value.trim();
@@ -108,24 +106,20 @@
                 return; 
             }
 
-            // TRAVA VISUAL: Desativa o botão para evitar clique duplo
             btn.disabled = true;
             btn.innerText = "Validando...";
             loading.style.display = "block";
 
             try {
-                // 1. VERIFICA SE O CÓDIGO JÁ EXISTE
-                // Cria uma busca no banco: "Me dê todos os corretores onde o campo 'codigo' é igual ao que foi digitado"
                 const qCodigo = query(collection(db, "corretores"), where("codigo", "==", codigo));
                 const snapCodigo = await getDocs(qCodigo);
 
-                if (!snapCodigo.empty) { // Se a busca não voltou vazia, é porque já existe!
+                if (!snapCodigo.empty) { 
                     alert(`❌ ERRO: O Código "${codigo}" já pertence a outro corretor!`);
                     resetarBotao();
-                    return; // Para tudo aqui
+                    return; 
                 }
 
-                // 2. VERIFICA SE O CPF JÁ EXISTE
                 const qCpf = query(collection(db, "corretores"), where("cpf", "==", cpf));
                 const snapCpf = await getDocs(qCpf);
 
@@ -135,7 +129,6 @@
                     return;
                 }
 
-                // 3. SE PASSOU NAS DUAS VERIFICAÇÕES, SALVA
                 await addDoc(collection(db, "corretores"), {
                     codigo: codigo,
                     grade: document.getElementById("grade").value,
