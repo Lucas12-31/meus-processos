@@ -37,7 +37,6 @@
         import { auth } from './config.js';
         import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
         
-        // Importa o script de segurança para verificar se já não está logado
         import './autenticacao.js';
 
         document.getElementById("btnLogin").addEventListener("click", async () => {
@@ -47,7 +46,6 @@
 
             try {
                 await signInWithEmailAndPassword(auth, email, senha);
-                // O redirecionamento acontece automaticamente pelo autenticacao.js
             } catch (error) {
                 console.error(error);
                 msgErro.style.display = "block";
